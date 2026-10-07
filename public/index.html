@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>BLIND MAZE - ARCHITECTURE</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: #080808;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        h1 { font-size: 1.1rem; letter-spacing: 3px; font-weight: 300; margin: 0 0 5px 0; color: #fff; }
+
+        #leaveRoomBtn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #2a0000;
+            color: #ff5252;
+            border: 1px solid #ff1744;
+            padding: 6px 12px;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            z-index: 100;
+        }
+        #leaveRoomBtn:hover {
+            background: #ff1744;
+            color: #fff;
+        }
+
+        .card {
+            background: #141414;
+            padding: 20px;
+            border: 1px solid #2a2a2a;
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .role-desc-box {
+            display: flex;
+            gap: 10px;
+            text-align: left;
+            margin-bottom: 15px;
+        }
+        .role-desc {
+            flex: 1;
+            background: #0a0a0a;
+            border: 1px solid #222;
+            padding: 10px;
+            font-size: 0.7rem;
+            color: #aaa;
+            line-height: 1.4;
+        }
+
+        input {
+            background: #080808;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 10px;
+            margin: 4px 0;
+            width: 90%;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        .btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-group-column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        button {
+            background: #1a1a1a;
+            color: #ccc;
+            border: 1px solid #333;
+            padding: 8px 14px;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        button:hover { background: #333; color: #fff; border-color: #555; }
+        button:disabled { background: #111; color: #444; border-color: #222; cursor: not-allowed; }
+
+        #status { font-size: 0.75rem; color: #888; margin: 2px 0; letter-spacing: 1px; }
+
+        #emergencyBanner {
+            display: none;
+            width: 100%;
+            max-width: 520px;
+            background: #2a0000;
+            color: #ff5252;
+            border: 1px solid #ff1744;
+            padding: 6px;
+            font-size: 0.7rem;
+            text-align: center;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .signal-container {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 520px;
+            margin-bottom: 6px;
+        }
+
+        .signal-box {
+            flex: 1;
+            padding: 6px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            min-height: 48px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+        }
+
+        .signal-box-title {
+            font-size: 0.6rem;
+            color: #777;
+            margin-bottom: 2px;
+            font-weight: normal;
+        }
+
+        #navSignalDisplay {
+            background: #0a192f;
+            border: 1px solid #1e4976;
+            color: #00e676;
+        }
+
+        #opSignalDisplay {
+            background: #1f140a;
+            border: 1px solid #76491e;
+            color: #ff9100;
+        }
+
+        .signal-red {
+            color: #ff1744 !important;
+            border-color: #ff1744 !important;
+            background: #2a0000 !important;
+        }
+
+        .game-main-area {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            justify-content: center;
+            gap: 12px;
+            position: relative;
+        }
+
+        .maze-container {
+            transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(7, 34px);
+            gap: 1px;
+            background: #222;
+            border: 2px solid #333;
+            padding: 1px;
+            width: fit-content;
+        }
+
+        #emergencyMiniArea {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #110000;
+            border: 2px solid #ff1744;
+            padding: 10px;
+            width: fit-content;
+            box-shadow: inset 0 0 15px #550000;
+        }
+
+        #miniTimer {
+            color: #ff5252;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+
+        #miniBoard {
+            display: grid;
+            grid-template-columns: repeat(5, 30px);
+            gap: 2px;
+            background: #333;
+            padding: 2px;
+            border: 1px solid #ff5252;
+        }
+        .mini-cell {
+            width: 30px; height: 30px;
+            background: #0a0a0a;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .cell {
+            width: 34px;
+            height: 34px;
+            background: #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            color: #fff;
+            position: relative;
+        }
+
+        .nav-trap { background: #d32f2f !important; border: 1px solid #ff5252; }
+        .nav-goal { background: #00e676 !important; border: 1px solid #69f0ae; }
+        .nav-floor { background: #141414; }
+
+        .blind { background: #040404 !important; }
+
+        .vision-wall { 
+            background: #3a2000 !important;
+            border: 2px solid #ff9100 !important;
+            box-shadow: inset 0 0 4px #ffab40;
+        }
+        .vision-wall::after {
+            content: "壁";
+            color: #ff9100;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .vision-path { 
+            background: #002244 !important;
+            border: 2px solid #00b0ff !important;
+            box-shadow: inset 0 0 4px #40c4ff;
+        }
+        .vision-path::after {
+            content: "道";
+            color: #00b0ff;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .player-node {
+            font-size: 1rem;
+            color: #40c4ff;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        /* ミニ迷路(エマージェンシー解除)のセル装飾。文字は表示せず色のみで区別する */
+        .mini-trap { background: #880000 !important; border: 1px solid #ff5252; }
+        .mini-goal { background: #00e676 !important; border: 1px solid #69f0ae; }
+        .mini-player {
+            background: #00b0ff !important;
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .controls-wrapper {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 4px;
+        }
+
+        .control-group {
+            padding: 6px 10px;
+            border: 1px solid #222;
+            background: #111;
+            text-align: center;
+        }
+
+        .control-title {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 44px);
+            gap: 3px;
+            justify-content: center;
+        }
+        .dpad button {
+            width: 44px;
+            height: 36px;
+            padding: 0;
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .nav-cross-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 64px);
+            gap: 4px;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto;
+        }
+        .nav-cross-grid button {
+            height: 38px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            padding: 0;
+        }
+
+        .wall-controls {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            margin-top: 4px;
+        }
+
+        .wall-controls button {
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            border-color: #ff9100;
+            color: #ffab40;
+            font-weight: bold;
+        }
+
+        #logSidebar {
+            width: 150px;
+            min-height: 180px;
+            background: #050505;
+            border: 1px solid #1a1a1a;
+            padding: 6px;
+            font-size: 0.65rem;
+            text-align: left;
+            color: #666;
+            font-family: monospace;
+            display: flex;
+            flex-direction: column;
+        }
+        #logSidebarTitle {
+            font-size: 0.6rem;
+            color: #444;
+            border-bottom: 1px solid #222;
+            padding-bottom: 2px;
+            margin-bottom: 4px;
+            letter-spacing: 1px;
+        }
+        #logContainer {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            align-items: center; justify-content: center; flex-direction: column;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #141414;
+            border: 1px solid #444;
+            padding: 20px;
+            max-width: 420px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+    </style>
+</head>
+<body>
+
+    <button id="leaveRoomBtn" style="display: none;" onclick="leaveRoom()">LEAVE (退室)</button>
+
+    <h1>BLIND MAZE</h1>
+
+    <div id="lobbyScreen" class="card">
+        <div class="role-desc-box">
+            <div class="role-desc">
+                <span style="color: #00e676; font-weight: bold;">【指示役 (NAVIGATOR)】</span><br>
+                1番目に接続。<br>
+                マップ上の<span style="color: #d32f2f;">爆弾（赤）</span>と<span style="color: #00e676;">出口（緑）</span>を見ながら、操作役に指示を送ります。
+            </div>
+            <div class="role-desc">
+                <span style="color: #40c4ff; font-weight: bold;">【操作役 (OPERATOR)】</span><br>
+                2番目に接続。<br>
+                指示に従って移動します。目の前1マスの<span style="color: #ff9100;">壁（橙）</span>・<span style="color: #00b0ff;">道（青）</span>を見ながら操作します。
+            </div>
+        </div>
+
+        <input type="text" id="roomIdInput" placeholder="ROOM ID (部屋名)"><br>
+        <input type="password" id="passwordInput" placeholder="PASSWORD"><br>
+        
+        <div class="btn-group">
+            <button onclick="joinRoom('create')" style="border-color: #00b0ff; color: #40c4ff;">CREATE ROOM (部屋作成)</button>
+            <button onclick="joinRoom('join')">JOIN ROOM (部屋参加)</button>
+        </div>
+    </div>
+
+    <div id="gameScreen" style="display: none; text-align: center;">
+        <div id="roomInfo" style="font-size: 0.7rem; color: #555; letter-spacing: 1px;"></div>
+        <div id="status">INITIALIZING...</div>
+
+        <div class="signal-container">
+            <div id="navSignalDisplay" class="signal-box">
+                <div class="signal-box-title">【指示役】命令コマンド</div>
+                <div id="navSignalText">-</div>
+            </div>
+            <div id="opSignalDisplay" class="signal-box">
+                <div class="signal-box-title">【操作役】壁報告</div>
+                <div id="opSignalText">-</div>
+            </div>
+        </div>
+
+        <div id="emergencyBanner"></div>
+
+        <div class="game-main-area">
+            <div id="boardContainer" class="maze-container">
+                <div id="board"></div>
+            </div>
+
+            <div id="emergencyMiniArea" class="maze-container">
+                <div style="font-size: 0.75rem; color: #ff1744; font-weight: bold; margin-bottom: 2px;">EMERGENCY OVERRIDE</div>
+                <div style="font-size: 0.65rem; color: #aaa; margin-bottom: 8px;">2人で解除行動を開始、または準備終了後に制限時間スタート！</div>
+                <div id="miniTimer">準備時間: 30</div>
+                <div id="miniBoard"></div>
+                <div id="miniNote" style="font-size: 0.65rem; color: #ffab40; margin-top: 8px;"></div>
+            </div>
+            
+            <div id="logSidebar">
+                <div id="logSidebarTitle">SIGNAL LOG</div>
+                <div id="logContainer"></div>
+            </div>
+        </div>
+
+        <div class="controls" id="playerControls" style="display: none;">
+            <div class="controls-wrapper">
+                <div class="control-group">
+                    <div class="control-title">1. MOVE (移動)</div>
+                    <div class="dpad">
+                        <div></div><button onclick="moveRelative('FORWARD')">前</button><div></div>
+                        <button onclick="moveRelative('LEFT')">左</button><div></div><button onclick="moveRelative('RIGHT')">右</button>
+                        <div></div><button onclick="moveRelative('BACK')">後</button><div></div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-title">2. ROTATE (視線)</div>
+                    <div class="dpad">
+                        <div></div><button onclick="changeDir('NORTH')">▲</button><div></div>
+                        <button onclick="changeDir('WEST')">◀</button><div></div><button onclick="changeDir('EAST')">▶</button><div></div>
+                        <button onclick="changeDir('SOUTH')">▼</button><div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="control-group" style="margin-top: 6px;">
+                <div class="control-title" style="font-size: 0.75rem;">3. WALL REPORT (指示役へ情報送信)</div>
+                <div class="wall-controls">
+                    <button onclick="sendSignal('東に壁！')">東に壁！</button>
+                    <button onclick="sendSignal('西に壁！')">西に壁！</button>
+                    <button onclick="sendSignal('南に壁！')">南に壁！</button>
+                    <button onclick="sendSignal('北に壁！')">北に壁！</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls" id="navControls" style="display: none;">
+            <div class="control-group" style="margin-top: 6px; padding: 10px;">
+                <div class="control-title" style="margin-bottom: 8px; font-size: 0.85rem;">NAVIGATION SIGNALS (方向指示)</div>
+                <div class="nav-cross-grid">
+                    <div></div>
+                    <button onclick="sendSignal('北に進め')" style="border-color: #00e676; color: #00e676;">北に進め</button>
+                    <div></div>
+
+                    <button onclick="sendSignal('西に進め')" style="border-color: #00e676; color: #00e676;">西に進め</button>
+                    <button onclick="sendSignal('一時停止せよ！')" style="border-color: #ff1744; color: #ff1744; font-size: 0.7rem;">一時停止せよ！</button>
+                    <button onclick="sendSignal('東に進め')" style="border-color: #00e676; color: #00e676;">東に進め</button>
+
+                    <div></div>
+                    <button onclick="sendSignal('南に進め')" style="border-color: #00e676; color: #00e676;">南に進め</button>
+                    <div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル -->
+    <div id="infoModal" class="modal">
+        <div class="modal-content" id="infoModalBox" style="border-color: #00b0ff;">
+            <h2 id="infoModalTitle" style="color: #00b0ff; margin-top: 0; font-size: 1.1rem; letter-spacing: 2px;">MESSAGE</h2>
+            <p id="infoModalMsg" style="font-size: 0.85rem; color: #ddd; line-height: 1.5; white-space: pre-wrap;"></p>
+            <button onclick="closeInfoModal()" id="infoModalBtn" style="background: #003366; border-color: #00b0ff; color: #fff; padding: 8px 16px;">確認</button>
+        </div>
+    </div>
+
+    <div id="emergencyModal" class="modal">
+        <div class="modal-content" style="border-color: #ff1744;">
+            <h2 style="color: #ff5252; margin-top: 0; font-size: 1.1rem; letter-spacing: 2px;">SYSTEM EMERGENCY</h2>
+            <p id="emergencyModalMsg" style="font-size: 0.8rem; color: #ddd; line-height: 1.5;"></p>
+            <button onclick="closeEmergencyModal()" style="background: #880000; border-color: #ff1744; color: #fff;">了解 (ACKNOWLEDGE)</button>
+        </div>
+    </div>
+
+    <div id="bombModal" class="modal">
+        <div class="modal-content" style="border-color: #ff1744; background: #1a0000;">
+            <h2 style="color: #ff1744; margin-top: 0; font-size: 1.2rem; letter-spacing: 2px;">BOMB DETONATED</h2>
+            <p id="bombModalMsg" style="font-size: 0.85rem; color: #ffcdd2; line-height: 1.5;">爆弾に接触しました！<br>同じマップの初期位置からやり直します。</p>
+            <button onclick="closeBombModal()" style="background: #b71c1c; border-color: #ff5252; color: #fff; font-weight: bold; padding: 10px 20px;">了解 (RESTART)</button>
+        </div>
+    </div>
+
+    <div id="resultModal" class="modal">
+        <div class="modal-content" id="resultModalBox">
+            <h2 id="resultModalTitle" style="margin-top: 0; font-size: 1.1rem; letter-spacing: 2px;"></h2>
+            <p id="resultModalMsg" style="font-size: 0.8rem; color: #ddd; line-height: 1.5;"></p>
+            <button onclick="closeResultModal()" id="resultModalBtn">OK</button>
+        </div>
+    </div>
+
+    <div id="clearModal" class="modal">
+        <div class="modal-content">
+            <h2 style="font-weight: 300; letter-spacing: 3px; color: #fff; margin-top: 0;">MAZE CLEARED</h2>
+            <p style="font-size: 0.8rem; color: #888; margin-bottom: 10px;">ミッション完了。お疲れ様でした！</p>
+            <div id="clearWaitMsg" style="font-size: 0.75rem; color: #ffab40; margin-bottom: 10px; display: none;"></div>
+            <div class="btn-group-column">
+                <button onclick="requestRestart('same')" style="border-color: #00e676; color: #00e676;">RESTART (同じ役割でもう一度)</button>
+                <button onclick="requestRestart('swap')" style="border-color: #00b0ff; color: #40c4ff;">RESTART (役割交代でもう一度)</button>
+                <button onclick="leaveRoom()" style="border-color: #ff1744; color: #ff5252;">LEAVE (退室)</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let myRole = null;
+        let myPos = { x: 0, y: 0, dir: 'SOUTH' };
+        let mazeData = [];
+
+        // ミニ迷路の静的データ (クライアント側の描画参照用)
+        const MINI_MAZE = [
+            [0, 0, 2, 0, 0],
+            [0, 2, 0, 0, 0],
+            [0, 0, 0, 2, 0],
+            [2, 0, 2, 0, 0],
+            [0, 0, 0, 0, 3]
+        ];
+
+        const dirSymbols = { NORTH: '▲', SOUTH: '▼', EAST: '▶', WEST: '◀' };
+
+        function showInfoModal(title, msg, onConfirm = null) {
+            document.getElementById('infoModalTitle').innerText = title;
+            document.getElementById('infoModalMsg').innerText = msg;
+            document.getElementById('infoModal').style.display = 'flex';
+            
+            const btn = document.getElementById('infoModalBtn');
+            btn.onclick = () => {
+                closeInfoModal();
+                if (onConfirm) onConfirm();
+            };
+        }
+
+        function closeInfoModal() {
+            document.getElementById('infoModal').style.display = 'none';
+        }
+
+        function joinRoom(action) {
+            const roomId = document.getElementById('roomIdInput').value.trim();
+            const password = document.getElementById('passwordInput').value.trim();
+            if (!roomId || !password) return showInfoModal('ERROR', '部屋名とパスワードを入力してください。');
+            socket.emit('joinRoom', { roomId, password, action });
+        }
+
+        socket.on('errorMsg', (msg) => showInfoModal('ERROR', msg));
+
+        socket.on('joinedRoom', ({ roomId, role, maze, playerCount }) => {
+            myRole = role;
+            mazeData = maze;
+            document.getElementById('lobbyScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            document.getElementById('leaveRoomBtn').style.display = 'block';
+            
+            document.getElementById('roomInfo').innerText = `ROOM: ${roomId} | ROLE: ${role.toUpperCase()}`;
+            document.getElementById('status').innerText = playerCount < 2 ? '相方の接続を待っています...' : 'ゲーム準備完了';
+
+            if (role === 'player') {
+                document.getElementById('playerControls').style.display = 'block';
+                document.getElementById('navControls').style.display = 'none';
+            } else {
+                document.getElementById('playerControls').style.display = 'none';
+                document.getElementById('navControls').style.display = 'block';
+            }
+
+            renderBoard();
+        });
+
+        socket.on('gameReady', (msg) => {
+            document.getElementById('status').innerText = msg;
+        });
+
+        function renderBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+
+            // 迷路サイズに応じてグリッドの列数を動的に設定（マップサイズ変更に自動追従）
+            if (mazeData.length > 0) {
+                board.style.gridTemplateColumns = `repeat(${mazeData[0].length}, 34px)`;
+            }
+
+            for (let y = 0; y < mazeData.length; y++) {
+                for (let x = 0; x < mazeData[0].length; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+
+                    if (myRole === 'navigator') {
+                        // 指示役には「爆弾」と「出口」のみを見せる。
+                        // 壁の配置は操作役からの報告でのみ把握させるため、
+                        // 壁(1)と通路(0)は同じ「blind」表示にして区別できないようにする。
+                        if (mazeData[y][x] === 2) cell.classList.add('nav-trap');
+                        else if (mazeData[y][x] === 3) cell.classList.add('nav-goal');
+                        else cell.classList.add('blind');
+
+                        if (myPos.x === x && myPos.y === y) {
+                            const p = document.createElement('span');
+                            p.className = 'player-node';
+                            p.innerText = dirSymbols[myPos.dir] || '●';
+                            cell.appendChild(p);
+                        }
+                    } else {
+                        if (myPos.x === x && myPos.y === y) {
+                            const p = document.createElement('span');
+                            p.className = 'player-node';
+                            p.innerText = dirSymbols[myPos.dir] || '●';
+                            cell.appendChild(p);
+                        } else {
+                            const frontPos = getFrontPos(myPos.x, myPos.y, myPos.dir);
+                            if (x === frontPos.x && y === frontPos.y) {
+                                if (mazeData[y][x] === 1) cell.classList.add('vision-wall');
+                                else cell.classList.add('vision-path');
+                            } else {
+                                cell.classList.add('blind');
+                            }
+                        }
+                    }
+                    board.appendChild(cell);
+                }
+            }
+        }
+
+        function getFrontPos(x, y, dir) {
+            if (dir === 'NORTH') return { x, y: y - 1 };
+            if (dir === 'SOUTH') return { x, y: y + 1 };
+            if (dir === 'EAST')  return { x: x + 1, y };
+            if (dir === 'WEST')  return { x: x - 1, y };
+            return { x, y };
+        }
+
+        function changeDir(dir) { socket.emit('changeDirection', dir); }
+        function moveRelative(step) { socket.emit('moveRelative', step); }
+        function sendSignal(msg) { socket.emit('sendSignal', msg); }
+
+        socket.on('updatePosition', (pos) => {
+            myPos = pos;
+            renderBoard();
+        });
+
+        socket.on('receiveSignal', ({ msg, time, role }) => {
+            const isStopCmd = (msg === '一時停止せよ！');
+            
+            if (role === 'navigator') {
+                const display = document.getElementById('navSignalDisplay');
+                document.getElementById('navSignalText').innerText = msg;
+                if (isStopCmd) display.classList.add('signal-red');
+                else display.classList.remove('signal-red');
+            } else {
+                document.getElementById('opSignalText').innerText = msg;
+            }
+
+            const log = document.getElementById('logContainer');
+            const item = document.createElement('div');
+            item.style.marginBottom = '3px';
+            if (isStopCmd) item.style.color = '#ff1744';
+            
+            const senderName = role === 'navigator' ? '指示役' : '操作役';
+            item.innerText = `[${time}] ${senderName}: ${msg}`;
+            log.appendChild(item);
+            log.scrollTop = log.scrollHeight;
+        });
+
+        socket.on('emergencyTriggered', ({ message }) => {
+            const banner = document.getElementById('emergencyBanner');
+            banner.style.display = 'block';
+            banner.innerHTML = message;
+
+            document.getElementById('emergencyModalMsg').innerHTML = message;
+            document.getElementById('emergencyModal').style.display = 'flex';
+        });
+
+        function closeEmergencyModal() {
+            document.getElementById('emergencyModal').style.display = 'none';
+        }
+
+        socket.on('startOverridePhase', ({ miniGrid, miniPos }) => {
+            document.getElementById('boardContainer').style.display = 'none';
+            document.getElementById('emergencyMiniArea').style.display = 'flex';
+            renderMiniBoard(miniGrid || MINI_MAZE, miniPos);
+        });
+
+        socket.on('miniTimerUpdate', ({ mode, time }) => {
+            const timerDiv = document.getElementById('miniTimer');
+            if (mode === 'PREP') {
+                timerDiv.innerText = `準備時間: ${time}`;
+                document.getElementById('miniNote').innerText = '操作を行うと即時制限時間が開始します';
+            } else {
+                timerDiv.innerText = `解除制限時間: ${time}`;
+                document.getElementById('miniNote').innerText = '解除システム作動中！ゴール(緑)を目指してください！';
+            }
+        });
+
+        socket.on('updateMiniPos', ({ miniGrid, miniPos }) => {
+            renderMiniBoard(miniGrid || MINI_MAZE, miniPos);
+        });
+
+        function renderMiniBoard(grid, pos) {
+            const board = document.getElementById('miniBoard');
+            board.innerHTML = '';
+
+            for (let y = 0; y < grid.length; y++) {
+                for (let x = 0; x < grid[0].length; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'mini-cell';
+
+                    // 指示役のみ爆弾・出口の位置が見える（操作役には見せない＝白紙の地図）。
+                    // 色のみで区別し、文字ラベルは表示しない。
+                    if (myRole === 'navigator') {
+                        if (grid[y][x] === 2) cell.classList.add('mini-trap');
+                        else if (grid[y][x] === 3) cell.classList.add('mini-goal');
+                    }
+
+                    if (pos.x === x && pos.y === y) {
+                        cell.classList.add('mini-player');
+                        cell.innerText = dirSymbols[pos.dir] || '';
+                    }
+                    board.appendChild(cell);
+                }
+            }
+        }
+
+        socket.on('overrideResult', ({ success, message }) => {
+            document.getElementById('emergencyMiniArea').style.display = 'none';
+            document.getElementById('boardContainer').style.display = 'block';
+            document.getElementById('emergencyBanner').style.display = 'none';
+
+            const modal = document.getElementById('resultModal');
+            const title = document.getElementById('resultModalTitle');
+            const msg = document.getElementById('resultModalMsg');
+            const box = document.getElementById('resultModalBox');
+
+            if (success) {
+                title.innerText = 'OVERRIDE SUCCESS';
+                title.style.color = '#00e676';
+                msg.innerText = '操作系統の正常化に成功しました。';
+                box.style.borderColor = '#00e676';
+            } else {
+                title.innerText = 'OVERRIDE FAILED';
+                title.style.color = '#ff1744';
+                msg.innerText = `解除失敗: ${message}\n操作反転状態が継続します。`;
+                box.style.borderColor = '#ff1744';
+            }
+            modal.style.display = 'flex';
+        });
+
+        function closeResultModal() {
+            document.getElementById('resultModal').style.display = 'none';
+        }
+
+        socket.on('gameReset', ({ message }) => {
+            document.getElementById('bombModalMsg').innerText = message;
+            document.getElementById('bombModal').style.display = 'flex';
+            myPos = { x: 0, y: 0, dir: 'SOUTH' };
+            renderBoard();
+        });
+
+        function closeBombModal() {
+            document.getElementById('bombModal').style.display = 'none';
+        }
+
+        socket.on('gameCleared', () => {
+            document.getElementById('clearModal').style.display = 'flex';
+            document.getElementById('clearWaitMsg').style.display = 'none';
+        });
+
+        function requestRestart(type) {
+            socket.emit('requestRestart', type);
+        }
+
+        socket.on('waitRestartChoice', (msg) => {
+            const waitMsg = document.getElementById('clearWaitMsg');
+            waitMsg.innerText = msg;
+            waitMsg.style.display = 'block';
+        });
+
+        socket.on('fullGameRestarted', ({ role, maze }) => {
+            myRole = role;
+            mazeData = maze;
+            myPos = { x: 0, y: 0, dir: 'SOUTH' };
+
+            document.getElementById('clearModal').style.display = 'none';
+            document.getElementById('emergencyBanner').style.display = 'none';
+            document.getElementById('emergencyMiniArea').style.display = 'none';
+            document.getElementById('boardContainer').style.display = 'block';
+            
+            // シグナル表示のクリア
+            document.getElementById('navSignalDisplay').classList.remove('signal-red');
+            document.getElementById('navSignalText').innerText = '-';
+            document.getElementById('opSignalText').innerText = '-';
+
+            if (myRole === 'player') {
+                document.getElementById('playerControls').style.display = 'block';
+                document.getElementById('navControls').style.display = 'none';
+            } else {
+                document.getElementById('playerControls').style.display = 'none';
+                document.getElementById('navControls').style.display = 'block';
+            }
+
+            renderBoard();
+            showInfoModal('SYSTEM RESTART', 'ゲームがリセットされ、新しい迷路で再スタートしました！');
+        });
+
+        function leaveRoom() {
+            socket.emit('leaveRoom');
+            location.reload();
+        }
+
+        socket.on('playerLeft', () => {
+            showInfoModal('NOTICE', '相方が退室しました。ロビーへ戻ります。', () => {
+                location.reload();
+            });
+        });
+    </script>
+</body>
+</html>
